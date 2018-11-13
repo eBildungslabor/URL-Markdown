@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>URL Markdown</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/2.10.0/github-markdown.css"
+    />
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Open+Sans);
+      .markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+      }
+
+      #textarea {
+        box-sizing: border-box;
+        display: block;
+        height: 200px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="textarea"></textarea>
+    <div id="markdown" class="markdown-body"></div>
+    <br /><br />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.5.1/marked.min.js"></script>
+    <script src="lzma.js"></script>
+    <script>
+      const textarea = document.querySelector('#textarea');
+      const markdown = document.querySelector('#markdown');
+
+      var my_lzma = new LZMA('lzma_worker.js');
+      //result = my_lzma.decompress('XQAAAAT//////////wA0GUnujd09Ot///90SAAA=');
+      function compress(str, callback) {
+        my_lzma.compress(
+          str,
+          9,
+          (result, error) => {
+            // console.log(result, error);
+            let bite = btoa(
+              String.fromCharCode.apply(null, new Uint8Array(result))
+            );
+            // console.log(str.length, 'to', bite.length);
+            callback(bite);
+          },
+          percent => {
+            // console.log(percent);
+          }
+        );
+      }
+
+      function decompress(bite, callback) {
+        my_lzma.decompress(
+          atob(bite)
+            .split('')
+            .map(function(c) {
+              return c.charCodeAt(0);
+            }),
+          (result, error) => {
+            // console.log(result, error);
+            callback(result);
+          },
+          percent => {
+            // console.log(percent);
+          }
+        );
+      }
+
+      function setTitle() {
+        const texts = markdown.innerText.split(/\r\n|\r|\n/);
+        if (texts && texts[0]) {
+          document.title = texts[0];
+        }
+      }
+
+      function outputMarkdown() {
+        markdown.innerHTML = marked(textarea.value);
+        setTitle();
+      }
+
+      function getMarkdown() {
+        // console.log(location.hash);
+        let hashStr = location.hash ? location.hash.slice(1) : null;
+        decompress(hashStr, result => {
+          textarea.value = result;
+          outputMarkdown();
+        });
+        return;
+      }
+
+      function setHash() {
+        compress(textarea.value, result => {
+          location.hash = result;
+        });
+      }
+
+      textarea.addEventListener(
+        'input',
+        () => {
+          outputMarkdown();
+          setHash();
+        },
+        false
+      );
+
+      getMarkdown();
+      // function execCompress
+    </script>
+  </body>
+</html>
